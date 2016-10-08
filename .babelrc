@@ -11,9 +11,11 @@
         "transform-es2015-block-scoping",
         "transform-es2015-arrow-functions"
       ]
-    }]
+    }],
+    "flow"
   ],
   "plugins": [
+    "transform-class-properties",
     ["transform-async-to-module-method", {
       "module": "bluebird",
       "method": "coroutine"

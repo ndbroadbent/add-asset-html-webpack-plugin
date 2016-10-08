@@ -1,44 +1,50 @@
+// @flow
+
 import path from 'path';
 import crypto from 'crypto';
-import Promise from 'bluebird';
+import BPromise from 'bluebird';
 
-function ensureTrailingSlash(string) {
-  if (string.length && string.substr(-1, 1) !== '/') {
+import type { AssetType, ArrayOfAssetsType, WebpackCompilationType, Callback } from '../types';
+
+function ensureTrailingSlash(string: ?string): string {
+  if (string && string.length && string.substr(-1, 1) !== '/') {
     return `${string}/`;
   }
 
-  return string;
+  return string || '';
 }
 
 // Copied from html-webpack-plugin
-function resolvePublicPath(compilation, filename) {
+function resolvePublicPath(compilation: Object, filename: string): string {
   /* istanbul ignore else */
-  const publicPath = typeof compilation.options.output.publicPath !== 'undefined'
+  const publicPath: string = typeof compilation.options.output.publicPath !== 'undefined'
     ? compilation.options.output.publicPath
     : path.relative(path.dirname(filename), '.'); // TODO: How to test this? I haven't written this logic, unsure what it does
 
   return ensureTrailingSlash(publicPath);
 }
 
-function resolveOutput(compilation, addedFilename, outputPath) {
+function resolveOutput(compilation: Object, addedFilename: string, outputPath: ?string) {
   if (outputPath && outputPath.length) {
-    compilation.assets[`${outputPath}/${addedFilename}`] = compilation.assets[addedFilename]; // eslint-disable-line no-param-reassign
-    delete compilation.assets[addedFilename]; // eslint-disable-line no-param-reassign
+    /* eslint-disable no-param-reassign */
+    compilation.assets[`${outputPath}/${addedFilename}`] = compilation.assets[addedFilename];
+    delete compilation.assets[addedFilename];
+    /* eslint-enable */
   }
 }
 
 async function addFileToAssets(
-  compilation,
-  htmlPluginData,
-  { filepath, typeOfAsset = 'js', includeSourcemap = true, hash = false, publicPath, outputPath }
-) {
+  compilation: WebpackCompilationType,
+  htmlPluginData: Object,
+  { filepath, typeOfAsset = 'js', includeSourcemap = true, hash = false, publicPath, outputPath }: AssetType
+): Promise<void> {
   if (!filepath) {
     const error = new Error('No filepath defined');
     compilation.errors.push(error);
     return Promise.reject(error);
   }
 
-  const addedFilename = await htmlPluginData.plugin.addFileToAssets(filepath, compilation);
+  const addedFilename: string = await htmlPluginData.plugin.addFileToAssets(filepath, compilation);
 
   let suffix = '';
   if (hash) {
@@ -57,17 +63,22 @@ async function addFileToAssets(
   resolveOutput(compilation, addedFilename, outputPath);
 
   if (includeSourcemap) {
-    const addedMapFilename = await htmlPluginData.plugin.addFileToAssets(`${filepath}.map`, compilation);
+    const addedMapFilename: string = await htmlPluginData.plugin.addFileToAssets(`${filepath}.map`, compilation);
     resolveOutput(compilation, addedMapFilename, outputPath);
   }
 
-  return Promise.resolve(null);
+  return Promise.resolve();
 }
 
 // Visible for testing
-export default async function(assets, compilation, htmlPluginData, callback) {
+export default async function(
+  assets: ArrayOfAssetsType,
+  compilation: WebpackCompilationType,
+  htmlPluginData: Object,
+  callback: Callback<any>
+) {
   try {
-    await Promise.mapSeries(assets, asset => addFileToAssets(compilation, htmlPluginData, asset));
+    await BPromise.mapSeries(assets, asset => addFileToAssets(compilation, htmlPluginData, asset));
 
     callback(null, htmlPluginData);
   } catch (e) {

@@ -5,6 +5,8 @@
   "rules": {
     "import/no-extraneous-dependencies": ["error", { "devDependencies": true }],
     // Off becuase stuff is generated later
-    "import/no-unresolved": "off"
+    "import/no-unresolved": "off",
+    // Off becuase this shouldn't be linted through flow for readability of example
+    "flowtype/require-valid-file-annotation": "off"
   }
 }

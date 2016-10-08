@@ -1,4 +1,4 @@
 {
   "root": true,
-  "extends": "simenb-base"
+  "extends": ["simenb-base", "simenb-flow"]
 }
